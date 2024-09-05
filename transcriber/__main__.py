@@ -1,7 +1,8 @@
 import argparse
 import sys
 import os
-from .video_processing import process_file, process_directory
+import traceback
+from .video_processing import process_file
 from .claude_processing import process_with_claude
 from .file_utils import print_stage, print_progress
 
@@ -9,63 +10,73 @@ def main():
     parser = argparse.ArgumentParser(
         description="Convert video to text using FFmpeg and OpenAI Whisper, then optionally process with Claude API",
         epilog="Example usage:\n"
-               "  Basic: transcriber input_video.mp4 output_transcript.md\n"
-               "  With refinement: transcriber input_video.mp4 output_transcript.md --refine\n"
-               "  Custom instructions: transcriber input_video.mp4 output_transcript.md --refine --instructions custom_prompt.md\n"
-               "  Refine existing file: transcriber --refine existing_transcript.md --instructions custom_prompt.md",
+               "  Video to text: transcriber input_video.mp4\n"
+               "  Refine existing file: transcriber input_transcript.md --instructions custom_prompt.md",
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("input", nargs='?', help="Path to the input video file or directory")
-    parser.add_argument("output", nargs='?', help="Path to save the output markdown file or directory")
-    parser.add_argument("--refine", action="store_true", help="Process the transcription with Claude API")
-    parser.add_argument("--instructions", default="default_prompt.md", help="Path to the Claude instructions file")
+    parser.add_argument("input", help="Path to the input video file or existing transcript")
+    parser.add_argument("--output", help="Path to save the output markdown file (optional)")
+    parser.add_argument("--instructions", help="Name of the instructions file in the 'instructions' folder, or full path to a custom instructions file")
+    parser.add_argument("--verbose", action="store_true", help="Print detailed error messages")
     
     args = parser.parse_args()
 
-    if args.refine and not args.output:
-        # Refining an existing file
-        if not args.input:
-            print("Error: When refining an existing file, an input file path is required.")
-            sys.exit(1)
-        refine_existing_file(args.input, args.instructions)
-    elif not args.input or not args.output:
-        print("Error: Both input and output paths are required for video processing.")
-        sys.exit(1)
-    elif not os.path.exists(args.input):
+    if not os.path.exists(args.input):
         print(f"Error: Input path '{args.input}' does not exist.")
         sys.exit(1)
-    elif os.path.isdir(args.input):
-        if not os.path.exists(args.output):
-            os.makedirs(args.output)
-        process_directory(args.input, args.output, args.refine, args.instructions)
+
+    # Handle instructions file path
+    if args.instructions:
+        if not os.path.isabs(args.instructions):
+            instructions_path = os.path.join('instructions', args.instructions)
+            if not os.path.exists(instructions_path):
+                print(f"Error: Instructions file '{instructions_path}' does not exist.")
+                sys.exit(1)
+        else:
+            instructions_path = args.instructions
+            if not os.path.exists(instructions_path):
+                print(f"Error: Instructions file '{instructions_path}' does not exist.")
+                sys.exit(1)
     else:
-        output_dir = os.path.dirname(args.output) if os.path.dirname(args.output) else '.'
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        if not args.output.lower().endswith('.md'):
-            args.output += '.md'
-        process_single_file(args.input, args.output, args.refine, args.instructions)
+        instructions_path = None
 
-    print_stage("Processing completed")
-
-def process_single_file(input_path, output_path, refine, instructions):
-    transcript_path = process_file(input_path, os.path.dirname(output_path))
-    
-    if refine:
-        print_stage(f"Refining transcript with Claude API")
-        process_with_claude(transcript_path, output_path, instructions)
+    # Handle output file path
+    if args.output:
+        output_path = args.output
     else:
-        print_progress(f"Transcription saved to: {transcript_path}")
+        input_basename = os.path.splitext(os.path.basename(args.input))[0]
+        if instructions_path:
+            output_path = os.path.join('processed', f"{input_basename}_processed.md")
+        else:
+            output_path = os.path.join('finished', f"{input_basename}.md")
 
-def refine_existing_file(input_path, instructions):
-    if not os.path.exists(input_path):
-        print(f"Error: Input file '{input_path}' does not exist.")
+    output_dir = os.path.dirname(output_path)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    try:
+        if args.input.lower().endswith('.md'):
+            # Refining an existing transcript
+            if instructions_path:
+                process_with_claude(args.input, output_path, instructions_path)
+            else:
+                print("Error: Instructions are required to process an existing transcript.")
+                sys.exit(1)
+        else:
+            # Processing a video file
+            transcript_path = process_file(args.input, 'finished')
+            if transcript_path and instructions_path:
+                process_with_claude(transcript_path, output_path, instructions_path)
+
+        print_stage("Processing completed")
+        print_progress(f"Output saved to: {output_path}")
+    except Exception as e:
+        if args.verbose:
+            print("An error occurred:")
+            print(traceback.format_exc())
+        else:
+            print(f"Error: {str(e)}")
         sys.exit(1)
-    
-    output_path = os.path.splitext(input_path)[0] + "_refined.md"
-    print_stage(f"Refining existing transcript with Claude API")
-    process_with_claude(input_path, output_path, instructions)
-    print_progress(f"Refined transcript saved to: {output_path}")
 
 if __name__ == "__main__":
     main()

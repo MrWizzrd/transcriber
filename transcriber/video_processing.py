@@ -24,7 +24,7 @@ def process_file(video_path, output_dir):
         return transcript_path
     except Exception as e:
         print(f"Error processing {video_path}: {str(e)}")
-        return None
+        raise
     finally:
         if os.path.exists(audio_path):
             print_progress(f"Removing temporary audio file: {audio_path}")
