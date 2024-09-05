@@ -6,6 +6,7 @@ from openai import OpenAI
 import shlex
 import re
 from pydub import AudioSegment
+from whisper.transcribe import Transcriber
 
 def print_stage(message):
     print(f"\n=== {message} ===")
@@ -140,4 +141,5 @@ def main():
     print_stage("Processing completed")
 
 if __name__ == "__main__":
-    main()
+    transcriber = Transcriber()
+    transcriber.transcribe()

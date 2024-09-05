@@ -1,12 +1,13 @@
-# Video to Text Transcription Tool
+# Transcriber: Video to Text Transcription and Refinement Tool
 
-This CLI tool converts video files to text transcriptions using FFmpeg and OpenAI's Whisper API. It can process either a single video file or a directory containing multiple video files. The transcriptions are saved in Markdown format.
+This CLI tool converts video files to text transcriptions using FFmpeg and OpenAI's Whisper API. It can process either a single video file or a directory containing multiple video files. The transcriptions are saved in Markdown format. Additionally, it can refine existing transcriptions using the Claude API.
 
 ## Prerequisites
 
 - Python 3.11+
 - FFmpeg installed and accessible in your system PATH
 - OpenAI API key
+- Anthropic API key (for Claude refinement)
 - Poetry (for package management)
 
 ## Installation
@@ -14,7 +15,7 @@ This CLI tool converts video files to text transcriptions using FFmpeg and OpenA
 1. Clone this repository:
    ```
    git clone <repository-url>
-   cd video-to-text
+   cd transcriber
    ```
 
 2. Install dependencies using Poetry:
@@ -26,23 +27,18 @@ This CLI tool converts video files to text transcriptions using FFmpeg and OpenA
 
 ## Usage
 
-1. Set your OpenAI API key as an environment variable:
+1. Set your API keys as environment variables:
    ```
-   export OPENAI_API_KEY=your_api_key_here
-   ```
-
-2. Run the script using Poetry:
-
-   For a single file:
-   ```
-   poetry run python video_to_text.py <input_video_path> <output_markdown_path>
+   export OPENAI_API_KEY=your_openai_api_key_here
+   export ANTHROPIC_API_KEY=your_anthropic_api_key_here
    ```
 
-   For a directory:
+2. Run the tool using Poetry:
+
    ```
-   poetry run python video_to_text.py <input_directory> <output_directory>
+   poetry run transcriber [options] <input> <output>
    ```
 
-   Replace `<input_video_path>` with the path to your video file, `<input_directory>` with the path to your directory containing video files, `<output_markdown_path>` with the desired location for the transcription Markdown file, and `<output_directory>` with the desired directory for output files.
+### Command-line Options
 
-Examples:
+Here's the output of `transcriber --help`:
