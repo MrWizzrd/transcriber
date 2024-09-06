@@ -1,6 +1,18 @@
-# Transcriber: Video to Text Transcription and Refinement Tool
+# Transcriber: Video/Audio to Text Transcription and Refinement Tool
 
-This CLI tool converts video files to text transcriptions using FFmpeg and OpenAI's Whisper API. It can process either a single video file or a directory containing multiple video files. The transcriptions are saved in Markdown format. Additionally, it can refine existing transcriptions using the Claude API.
+Transcriber is a powerful CLI tool that converts video and audio files to text transcriptions using FFmpeg and OpenAI's Whisper API. It can process single video/audio files or entire directories, and optionally refine the transcriptions using AI models like Claude or OpenRouter.
+
+## Features
+
+- Convert video/audio to text transcriptions using OpenAI's Whisper API
+- Process single video/audio files or entire directories
+- Refine transcriptions using AI models (Claude or OpenRouter) with custom instructions
+- Handle large files by splitting them into chunks
+- Respect API rate limits and token limits
+- Configurable settings via YAML file
+- Progress tracking for long-running operations
+- Detailed logging and error handling
+- Support for processing existing markdown files through refinement
 
 ## Prerequisites
 
@@ -8,13 +20,14 @@ This CLI tool converts video files to text transcriptions using FFmpeg and OpenA
 - FFmpeg installed and accessible in your system PATH
 - OpenAI API key
 - Anthropic API key (for Claude refinement)
+- OpenRouter API key (optional, for OpenRouter refinement)
 - Poetry (for package management)
 
 ## Installation
 
 1. Clone this repository:
    ```
-   git clone <repository-url>
+   git clone https://github.com/yourusername/transcriber.git
    cd transcriber
    ```
 
@@ -23,22 +36,17 @@ This CLI tool converts video files to text transcriptions using FFmpeg and OpenA
    poetry install
    ```
 
-3. Ensure FFmpeg is installed on your system and accessible via the command line.
+3. Set up your API keys:
+   - Create a `.env` file in the project root
+   - Add your API keys:
+     ```
+     OPENAI_API_KEY=your_openai_api_key_here
+     ANTHROPIC_API_KEY=your_anthropic_api_key_here
+     OPENROUTER_API_KEY=your_openrouter_api_key_here
+     ```
+
+4. Configure the `config.yaml` file with your desired settings.
 
 ## Usage
 
-1. Set your API keys as environment variables:
-   ```
-   export OPENAI_API_KEY=your_openai_api_key_here
-   export ANTHROPIC_API_KEY=your_anthropic_api_key_here
-   ```
-
-2. Run the tool using Poetry:
-
-   ```
-   poetry run transcriber [options] <input> <output>
-   ```
-
-### Command-line Options
-
-Here's the output of `transcriber --help`:
+Basic usage:

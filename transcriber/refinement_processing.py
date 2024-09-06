@@ -3,18 +3,32 @@ import asyncio
 import os
 from pathlib import Path
 from openai import OpenAI
-from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
-from .file_handler import FileHandler
+from anthropic import Anthropic
+from .file_handler import FileHandler  # Add this import
 from .config import Config
-from .exceptions import ClaudeProcessingError
+from .exceptions import RefinementProcessingError
 from .token_utils import count_tokens, split_into_chunks
 
 MAX_TOKENS_PER_REQUEST = 20000
 REQUESTS_PER_MINUTE = 5
 TOKENS_PER_DAY = 300000
 
-async def process_with_claude(input_path: Path, output_path: Path, instructions_path: Path, config: Config):
-    logging.info(f"Processing with Claude API: {input_path.name}")
+async def process_with_refinement(input_path: Path, output_path: Path, instructions_path: Path, config: Config):
+    """
+    Process a single file with the refinement API.
+
+    This function reads the input file, applies refinement instructions, and saves the refined output.
+
+    Args:
+        input_path (Path): Path to the input file to be refined.
+        output_path (Path): Path to save the refined output.
+        instructions_path (Path): Path to the file containing refinement instructions.
+        config (Config): Configuration object containing API settings.
+
+    Raises:
+        RefinementProcessingError: If there's an error during the refinement process.
+    """
+    logging.info(f"Processing with Refinement API: {input_path.name}")
     
     if config.use_openrouter:
         client = OpenAI(
@@ -40,23 +54,19 @@ async def process_with_claude(input_path: Path, output_path: Path, instructions_
                     {"role": "system", "content": instructions},
                     {"role": "user", "content": f"Here's a chunk of the transcript to refine:\n\n{chunk}\n\nPlease refine this chunk according to the instructions provided."}
                 ]
-                response = await client.chat.completions.create(
+                response = client.chat.completions.create(
                     model=model,
                     messages=messages,
                     max_tokens=config.max_tokens,
                     temperature=config.temperature,
-                    extra_headers={
-                        "HTTP-Referer": os.getenv("YOUR_SITE_URL", "http://localhost"),
-                        "X-Title": os.getenv("YOUR_APP_NAME", "Transcriber"),
-                    },
                 )
                 refined_chunks.append(response.choices[0].message.content)
             else:
                 response = client.completions.create(
                     model=model,
-                    max_tokens=config.max_tokens,
+                    max_tokens_to_sample=config.max_tokens,
                     temperature=config.temperature,
-                    prompt=f"{instructions}\n\nHere's a chunk of the transcript to refine:\n\n{chunk}\n\nPlease refine this chunk according to the instructions provided."
+                    prompt=f"{instructions}\n\nHuman: Here's a chunk of the transcript to refine:\n\n{chunk}\n\nPlease refine this chunk according to the instructions provided.\n\nAssistant:"
                 )
                 refined_chunks.append(response.completion)
             
@@ -65,7 +75,7 @@ async def process_with_claude(input_path: Path, output_path: Path, instructions_
                 await asyncio.sleep(60 / REQUESTS_PER_MINUTE)
         
         except Exception as e:
-            logging.error(f"Error processing chunk {i+1} with Claude API: {str(e)}")
+            logging.error(f"Error processing chunk {i+1} with Refinement API: {str(e)}")
             refined_chunks.append(chunk)  # Use original chunk if processing fails
     
     refined_transcript = "\n\n".join(refined_chunks)
@@ -102,10 +112,10 @@ async def process_multiple_files(input_files: list[Path], output_dir: Path, inst
                 continue
 
             try:
-                await process_with_claude(transcript_path, output_path, instructions_path, config)
+                await process_with_refinement(transcript_path, output_path, instructions_path, config)
             except Exception as e:
-                logging.error(f"Error processing {input_file.name} with Claude API: {str(e)}")
-                # If Claude processing fails, copy the original transcript to the output
+                logging.error(f"Error processing {input_file.name} with refinement API: {str(e)}")
+                # If refinement processing fails, copy the original transcript to the output
                 FileHandler.write_file(output_path, FileHandler.read_file(transcript_path))
             
             # Count tokens processed

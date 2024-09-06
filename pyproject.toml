@@ -9,9 +9,17 @@ python = "^3.11"
 openai = "^1.3.0"
 pydub = "^0.25.1"
 anthropic = "^0.3.11"
+click = "^8.1.7"
+colorama = "^0.4.6"
+tqdm = "^4.66.5"
+tiktoken = "^0.7.0"
+python-dotenv = "^1.0.1"
 
 [tool.poetry.scripts]
 transcriber = "transcriber.__main__:main"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

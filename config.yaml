@@ -1,1 +1,10 @@
- 
+openai_api_key: ${OPENAI_API_KEY}
+anthropic_api_key: ${ANTHROPIC_API_KEY}
+openrouter_api_key: ${OPENROUTER_API_KEY}
+use_openrouter: false
+output_dir: ./output
+instructions_dir: ./instructions
+claude_model: "claude-2.1"  # Update this line to use a currently available model
+openrouter_claude_model: "anthropic/claude-2.1"
+max_tokens: 100000
+temperature: 0.5
